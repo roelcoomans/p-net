@@ -51,6 +51,8 @@ target_compile_options(profinet
   -Wno-unused-parameter
   -ffunction-sections
   -fdata-sections
+  -O0
+  -ggdb
   INTERFACE
   $<$<CONFIG:Coverage>:--coverage>
   )
@@ -63,36 +65,36 @@ target_link_libraries(profinet
   $<$<CONFIG:Coverage>:--coverage>
   )
 
-target_include_directories(pn_dev
-  PRIVATE
-  sample_app
-  src/ports/linux
-  )
+# target_include_directories(pn_dev
+#   PRIVATE
+#   sample_app
+#   src/ports/linux
+#   )
 
-target_sources(pn_dev
-  PRIVATE
-  sample_app/sampleapp_common.c
-  sample_app/app_utils.c
-  sample_app/app_log.c
-  sample_app/app_gsdml.c
-  sample_app/app_data.c
-  src/ports/linux/sampleapp_main.c
-  )
+# target_sources(pn_dev
+#   PRIVATE
+#   sample_app/sampleapp_common.c
+#   sample_app/app_utils.c
+#   sample_app/app_log.c
+#   sample_app/app_gsdml.c
+#   sample_app/app_data.c
+#   src/ports/linux/sampleapp_main.c
+#   )
 
-target_compile_options(pn_dev
-  PRIVATE
-  -Wall
-  -Wextra
-  -Werror
-  -Wno-unused-parameter
-  -ffunction-sections
-  -fdata-sections
-  )
+# target_compile_options(pn_dev
+#   PRIVATE
+#   -Wall
+#   -Wextra
+#   -Werror
+#   -Wno-unused-parameter
+#   -ffunction-sections
+#   -fdata-sections
+#   )
 
-target_link_options(pn_dev
-   PRIVATE
-   -Wl,--gc-sections
-)
+# target_link_options(pn_dev
+#    PRIVATE
+#    -Wl,--gc-sections
+# )
 
 install (FILES
   src/ports/linux/pnal_config.h

@@ -13,9 +13,8 @@
 # full license information.
 #*******************************************************************/
 
-cmake_minimum_required (VERSION 3.14)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tools")
+cmake_minimum_required (VERSION 3.7.2)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 project (PROFINET VERSION 0.1.0)
 
 # Default settings if this is the main project
@@ -43,10 +42,9 @@ if (CMAKE_PROJECT_NAME STREQUAL PROFINET)
   message(STATUS "Building for ${CMAKE_SYSTEM_NAME}")
 endif()
 
-include(AddOsal)
 include(GenerateExportHeader)
 include(CMakeDependentOption)
-include(GetGitRevision)
+include(GNUInstallDirs)
 
 # Always use standard .o suffix
 set(CMAKE_C_OUTPUT_EXTENSION_REPLACE 1)
@@ -166,8 +164,8 @@ configure_file (
 
 # Add platform-dependent targets early, so they can be configured by
 # platform
+
 add_library(profinet "")
-add_executable(pn_dev "")
 
 if (CMAKE_PROJECT_NAME STREQUAL PROFINET AND BUILD_TESTING)
   add_executable(pf_test "")
@@ -181,12 +179,11 @@ generate_export_header(profinet
   EXPORT_FILE_NAME ${PROFINET_BINARY_DIR}/include/pnet_export.h
   )
 
-set_target_properties (profinet pn_dev
+set_target_properties (profinet
   PROPERTIES
   C_STANDARD 99
   )
-
-target_compile_features(profinet PUBLIC c_std_99)
+set_property(TARGET profinet PROPERTY C_STANDARD 99)
 
 target_include_directories(profinet
   PUBLIC
@@ -205,12 +202,12 @@ target_link_libraries(profinet PUBLIC osal)
 install (
   TARGETS profinet
   EXPORT ProfinetConfig
-  DESTINATION lib
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
 install(
   EXPORT ProfinetConfig
-  DESTINATION cmake
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake
   )
 
 install (FILES
@@ -222,7 +219,6 @@ install (FILES
   )
 
 add_subdirectory (src)
-add_subdirectory (sample_app)
 
 if (CMAKE_PROJECT_NAME STREQUAL PROFINET AND BUILD_TESTING)
   add_subdirectory (test)
