@@ -51,8 +51,7 @@ target_compile_options(profinet
   -Wno-unused-parameter
   -ffunction-sections
   -fdata-sections
-  -O0
-  -ggdb
+  -O2
   INTERFACE
   $<$<CONFIG:Coverage>:--coverage>
   )
