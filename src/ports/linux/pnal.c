@@ -224,24 +224,6 @@ uint8_t pnal_buf_header (pnal_buf_t * p, int16_t header_size_increment)
 
 /************************** Networking ***************************************/
 
-/** @internal
- * Convert IPv4 address to string
- * @param ip               In:    IP address
- * @param outputstring     Out:   Resulting string. Should have size
- *                                PNAL_INET_ADDRSTR_SIZE.
- */
-static void os_ip_to_string (pnal_ipaddr_t ip, char * outputstring)
-{
-   snprintf (
-      outputstring,
-      PNAL_INET_ADDRSTR_SIZE,
-      "%u.%u.%u.%u",
-      (uint8_t) ((ip >> 24) & 0xFF),
-      (uint8_t) ((ip >> 16) & 0xFF),
-      (uint8_t) ((ip >> 8) & 0xFF),
-      (uint8_t) (ip & 0xFF));
-}
-
 int pnal_set_ip_suite (
    const char * interface_name,
    const pnal_ipaddr_t * p_ipaddr,
@@ -250,25 +232,13 @@ int pnal_set_ip_suite (
    const char * hostname,
    bool permanent)
 {
-   char ip_string[PNAL_INET_ADDRSTR_SIZE];      /** Terminated string */
-   char netmask_string[PNAL_INET_ADDRSTR_SIZE]; /** Terminated string */
-   char gateway_string[PNAL_INET_ADDRSTR_SIZE]; /** Terminated string */
-   const char * argv[8];
-
-   os_ip_to_string (*p_ipaddr, ip_string);
-   os_ip_to_string (*p_netmask, netmask_string);
-   os_ip_to_string (*p_gw, gateway_string);
-
-   argv[0] = "set_network_parameters";
-   argv[1] = interface_name;
-   argv[2] = (char *)&ip_string;
-   argv[3] = (char *)&netmask_string;
-   argv[4] = (char *)&gateway_string;
-   argv[5] = hostname;
-   argv[6] = permanent ? "1" : "0";
-   argv[7] = NULL;
-
-   return pnal_execute_script (argv);
+  (void) interface_name;
+  (void) p_ipaddr;
+  (void) p_netmask;
+  (void) p_gw;
+  (void) hostname;
+  (void) permanent;
+  return 0;
 }
 
 /**
