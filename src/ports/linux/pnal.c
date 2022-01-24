@@ -336,7 +336,7 @@ int pnal_eth_get_status (const char * interface_name, pnal_eth_status_t * status
 
    int ret = -1;
    int control_socket;
-   struct ifreq ifr;
+   struct ifreq ifr = {0};
    struct ethtool_cmd eth_status_linux;
    uint32_t speed = 0; /* Mbit/s */
 

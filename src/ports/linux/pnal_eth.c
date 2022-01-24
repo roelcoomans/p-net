@@ -88,8 +88,8 @@ pnal_eth_handle_t * pnal_eth_init (
 {
    pnal_eth_handle_t * handle;
    int i;
-   struct ifreq ifr;
-   struct sockaddr_ll sll;
+   struct ifreq ifr = {0};
+   struct sockaddr_ll sll = {0};
    int ifindex;
    struct timeval timeout;
    const uint16_t linux_receive_type =
