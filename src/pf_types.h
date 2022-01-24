@@ -2687,6 +2687,7 @@ struct pnet
    {
       os_event_t * events;
    } pf_bg_worker;
+   os_thread_t *pf_bg_worker_thread;
 
 #if PNET_OPTION_SNMP
    pf_snmp_data_t snmp_data;

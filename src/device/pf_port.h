@@ -28,6 +28,13 @@ extern "C" {
 void pf_port_init (pnet_t * net);
 
 /**
+ * Cleanup port data
+ *
+ * @param net              In:    The p-net stack instance.
+ */
+void pf_port_exit (pnet_t * net);
+
+/**
  * Init main interface data, and schedule Ethernet link monitoring
  *
  * @param net              In:    The p-net stack instance.

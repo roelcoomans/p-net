@@ -158,6 +158,16 @@ int pf_eth_init (pnet_t * net, const pnet_cfg_t * p_cfg)
    return 0;
 }
 
+/* Cleanup of all possible resource */
+void pf_eth_exit (pnet_t * net)
+{
+   pnal_eth_exit (net->pf_interface.main_port.handle);
+   memset (
+      &net->pf_interface.main_port,
+      0,
+      sizeof (net->pf_interface.main_port)); /* probably not needed... */
+}
+
 int pf_eth_send (pnet_t * net, pnal_eth_handle_t * handle, pnal_buf_t * buf)
 {
    int sent_len = 0;

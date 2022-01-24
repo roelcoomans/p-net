@@ -558,6 +558,15 @@ int pf_cmina_init (pnet_t * net)
    return ret;
 }
 
+void pf_cmina_exit (pnet_t * net)
+{
+   if (net->cmina_mutex != NULL)
+   {
+      os_mutex_destroy (net->cmina_mutex);
+      net->cmina_mutex = NULL;
+   }
+}
+
 /**
  * Abort active ARs with error code
  * @param net        InOut: The p-net stack instance

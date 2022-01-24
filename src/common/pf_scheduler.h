@@ -31,6 +31,13 @@ extern "C" {
 void pf_scheduler_init (pnet_t * net, uint32_t tick_interval);
 
 /**
+ * Cleanup the scheduler.
+ *
+ * @param net              InOut: The p-net stack instance
+ */
+void pf_scheduler_exit (pnet_t * net);
+
+/**
  * Initialize a timeout handle.
  * @param handle           Out:   Timeout handle.
  * @param name             In:    Descriptive name for debugging. Not NULL.

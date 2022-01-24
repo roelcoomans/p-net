@@ -34,6 +34,13 @@ extern "C" {
 int pf_eth_init (pnet_t * net, const pnet_cfg_t * p_cfg);
 
 /**
+ * Cleanup and stop the ETH component
+ *
+ * @param net              InOut: The p-net stack instance
+ */
+void pf_eth_exit (pnet_t * net);
+
+/**
  * Send raw Ethernet data.
  *
  * @param net              InOut: The p-net stack instance

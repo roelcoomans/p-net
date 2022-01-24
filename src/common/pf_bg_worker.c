@@ -17,6 +17,7 @@
 #include "pf_includes.h"
 
 #include <inttypes.h>
+#include <stdlib.h>
 
 /* Events handled by bg worker task */
 
@@ -24,6 +25,7 @@
 #define BG_JOB_EVENT_SAVE_ASE_NVM_DATA    BIT (1)
 #define BG_JOB_EVENT_SAVE_IM_NVM_DATA     BIT (2)
 #define BG_JOB_EVENT_SAVE_PDPORT_NVM_DATA BIT (3)
+#define BG_JOB_EVENT_STOP                 BIT (4)
 
 static void bg_worker_task (void * arg);
 
@@ -32,12 +34,36 @@ void pf_bg_worker_init (pnet_t * net)
    net->pf_bg_worker.events = os_event_create();
    CC_ASSERT (net->pf_bg_worker.events != NULL);
 
-   os_thread_create (
+   net->pf_bg_worker_thread = os_thread_create (
       "p-net_bg_worker",
       net->fspm_cfg.pnal_cfg.bg_worker_thread.prio,
       net->fspm_cfg.pnal_cfg.bg_worker_thread.stack_size,
       bg_worker_task,
       (void *)net);
+}
+
+void pf_bg_worker_exit (pnet_t * net)
+{
+   pf_bg_worker_start_job (net, PF_BGJOB_STOP);
+   int ret = os_thread_join (net->pf_bg_worker_thread);
+   if (ret != 0)
+   {
+      LOG_ERROR (
+         PNET_LOG,
+         "BGW(%d): Could not join with bg worker thread (%d)\n",
+         __LINE__,
+         ret);
+   }
+   if (net->pf_bg_worker.events != NULL)
+   {
+      os_event_destroy (net->pf_bg_worker.events);
+      net->pf_bg_worker.events = NULL;
+   }
+   if (net->pf_bg_worker_thread != NULL)
+   {
+      os_thread_destroy (net->pf_bg_worker_thread);
+      net->pf_bg_worker_thread = NULL;
+   }
 }
 
 int pf_bg_worker_start_job (pnet_t * net, pf_bg_job_t job_id)
@@ -61,6 +87,9 @@ int pf_bg_worker_start_job (pnet_t * net, pf_bg_job_t job_id)
    case PF_BGJOB_SAVE_PDPORT_NVM_DATA:
       os_event_set (net->pf_bg_worker.events, BG_JOB_EVENT_SAVE_PDPORT_NVM_DATA);
       break;
+   case PF_BGJOB_STOP:
+      os_event_set (net->pf_bg_worker.events, BG_JOB_EVENT_STOP);
+      break;
    default:
       LOG_ERROR (
          PNET_LOG,
@@ -81,9 +110,10 @@ int pf_bg_worker_start_job (pnet_t * net, pf_bg_job_t job_id)
 static void bg_worker_task (void * arg)
 {
    pnet_t * net = (pnet_t *)arg;
-   uint32_t mask =
-      BG_JOB_EVENT_UPDATE_PORTS_STATUS | BG_JOB_EVENT_SAVE_ASE_NVM_DATA |
-      BG_JOB_EVENT_SAVE_IM_NVM_DATA | BG_JOB_EVENT_SAVE_PDPORT_NVM_DATA;
+   uint32_t mask = BG_JOB_EVENT_UPDATE_PORTS_STATUS |
+                   BG_JOB_EVENT_SAVE_ASE_NVM_DATA |
+                   BG_JOB_EVENT_SAVE_IM_NVM_DATA |
+                   BG_JOB_EVENT_SAVE_PDPORT_NVM_DATA | BG_JOB_EVENT_STOP;
    uint32_t flags = 0;
 
    for (;;)
@@ -117,6 +147,12 @@ static void bg_worker_task (void * arg)
             BG_JOB_EVENT_UPDATE_PORTS_STATUS);
 
          pf_pdport_update_eth_status (net);
+      }
+      if (flags & BG_JOB_EVENT_STOP)
+      {
+         os_event_clr (net->pf_bg_worker.events, BG_JOB_EVENT_STOP);
+
+         break;
       }
    }
 }

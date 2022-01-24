@@ -117,6 +117,22 @@ pnet_t * pnet_init (const pnet_cfg_t * p_cfg)
    return net;
 }
 
+void pnet_exit (pnet_t * net)
+{
+   LOG_DEBUG (PNET_LOG, "API(%d): Application calls pnet_exit()\n", __LINE__);
+   pf_fspm_exit (net);
+   pf_eth_exit (net);
+   pf_scheduler_exit (net);
+   pf_bg_worker_exit (net);
+   pf_cmina_exit (net);
+   pf_dcp_exit (net);
+   pf_port_exit (net);
+   pf_lldp_exit (net);
+   pf_cmdev_exit (net);
+   pf_cmrpc_exit (net);
+   free (net);
+}
+
 void pnet_handle_periodic (pnet_t * net)
 {
 #if LOG_DEBUG_ENABLED(PNET_LOG)

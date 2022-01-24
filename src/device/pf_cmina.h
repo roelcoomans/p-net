@@ -34,6 +34,13 @@ extern "C" {
 int pf_cmina_init (pnet_t * net);
 
 /**
+ * Cleanup the CMINA component.
+ *
+ * @param net              InOut: The p-net stack instance
+ */
+void pf_cmina_exit (pnet_t * net);
+
+/**
  * Remove the stack's data files.
  *
  * @param file_directory   In:    File directory

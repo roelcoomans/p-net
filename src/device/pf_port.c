@@ -61,6 +61,14 @@ void pf_port_init (pnet_t * net)
    }
 }
 
+void pf_port_exit (pnet_t * net)
+{
+   if (net->pf_interface.port_mutex != NULL) {
+      os_mutex_destroy(net->pf_interface.port_mutex);
+      net->pf_interface.port_mutex = NULL;
+   }
+}
+
 void pf_port_main_interface_init (pnet_t * net)
 {
    /* Format of LLDP frames */

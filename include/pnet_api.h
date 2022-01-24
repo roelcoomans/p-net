@@ -1297,6 +1297,14 @@ typedef struct pnet_cfg
 PNET_EXPORT pnet_t * pnet_init (const pnet_cfg_t * p_cfg);
 
 /**
+ * Cleanup and stop the Profinet stack.
+ *
+ * @param p_cfg            In:    Profinet configuration. These values are used
+ *                                at first startup and at factory reset.
+ */
+PNET_EXPORT void pnet_exit (pnet_t * net);
+
+/**
  * Execute all periodic functions within the ProfiNet stack.
  *
  * This function shall be called periodically by the application.

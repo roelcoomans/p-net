@@ -297,6 +297,15 @@ void pf_scheduler_init (pnet_t * net, uint32_t tick_interval)
    }
 }
 
+void pf_scheduler_exit (pnet_t * net)
+{
+   if (net->scheduler_timeout_mutex != NULL)
+   {
+      os_mutex_destroy (net->scheduler_timeout_mutex);
+      net->scheduler_timeout_mutex = NULL;
+   }
+}
+
 int pf_scheduler_add (
    pnet_t * net,
    uint32_t delay,

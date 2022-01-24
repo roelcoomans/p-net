@@ -353,6 +353,13 @@ pnal_eth_handle_t * pnal_eth_init (
    void * arg);
 
 /**
+ * Cleanup and stop receiving of raw Ethernet frames
+ *
+ * @param handle           In:    Ethernet handle
+ */
+void pnal_eth_exit (pnal_eth_handle_t * handle);
+
+/**
  * Open an UDP socket
  *
  * @param addr             In:    IP address to listen to. Typically used with

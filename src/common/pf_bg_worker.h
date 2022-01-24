@@ -30,6 +30,7 @@ typedef enum pf_bg_job
    PF_BGJOB_SAVE_IM_NVM_DATA,        /**< Save non volatile IM data to file */
    PF_BGJOB_SAVE_PDPORT_NVM_DATA,    /**< Save non volatile PDPort data to file
                                       */
+   PF_BGJOB_STOP,                    /**< Stop the bg worker */
 } pf_bg_job_t;
 
 /**
@@ -38,6 +39,13 @@ typedef enum pf_bg_job
  * @param net              InOut: The p-net stack instance
  */
 void pf_bg_worker_init (pnet_t * net);
+
+/**
+ * Cleanup and stop the background worker.
+ *
+ * @param net              InOut: The p-net stack instance
+ */
+void pf_bg_worker_exit (pnet_t * net);
 
 /**
  * Start a background job.

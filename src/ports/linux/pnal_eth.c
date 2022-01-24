@@ -19,6 +19,7 @@
  */
 
 #include "pnal.h"
+#include "osal.h"
 #include "osal_log.h"
 
 #include <net/ethernet.h>
@@ -37,7 +38,25 @@ struct pnal_eth_handle
    void * arg;
    int socket;
    os_thread_t * thread;
+   int stop;
+   os_mutex_t * stop_mutex;
 };
+
+static void pnal_eth_set_stop (pnal_eth_handle_t * handle)
+{
+   os_mutex_lock (handle->stop_mutex);
+   handle->stop = 1;
+   os_mutex_unlock (handle->stop_mutex);
+}
+
+static int pnal_eth_get_stop (pnal_eth_handle_t * handle)
+{
+   int result = 0;
+   os_mutex_lock (handle->stop_mutex);
+   result = handle->stop;
+   os_mutex_unlock (handle->stop_mutex);
+   return result;
+}
 
 /**
  * @internal
@@ -58,7 +77,7 @@ static void os_eth_task (void * thread_arg)
    pnal_buf_t * p = pnal_buf_alloc (PNAL_BUF_MAX_SIZE);
    assert (p != NULL);
 
-   while (1)
+   while (!pnal_eth_get_stop (eth_handle))
    {
       readlen = recv (eth_handle->socket, p->payload, PNAL_BUF_MAX_SIZE, 0);
       if (readlen == -1)
@@ -80,6 +99,7 @@ static void os_eth_task (void * thread_arg)
          assert (p != NULL);
       }
    }
+   pnal_buf_free (p);
 }
 
 pnal_eth_handle_t * pnal_eth_init (
@@ -94,7 +114,8 @@ pnal_eth_handle_t * pnal_eth_init (
    struct ifreq ifr = {0};
    struct sockaddr_ll sll = {0};
    int ifindex;
-   struct timeval timeout;
+   struct timeval timeout_snd;
+   struct timeval timeout_rcv;
    const uint16_t linux_receive_type =
       (receive_type == PNAL_ETHTYPE_ALL) ? ETH_P_ALL : receive_type;
 
@@ -104,19 +125,37 @@ pnal_eth_handle_t * pnal_eth_init (
       return NULL;
    }
 
+   handle->stop_mutex = os_mutex_create();
+   if (handle->stop_mutex == NULL)
+   {
+      free (handle);
+      return NULL;
+   }
+   handle->stop = 0;
    handle->arg = arg;
    handle->callback = callback;
    handle->socket = socket (PF_PACKET, SOCK_RAW, htons (linux_receive_type));
 
    /* Adjust send timeout */
-   timeout.tv_sec = 0;
-   timeout.tv_usec = 1;
+   timeout_snd.tv_sec = 0;
+   timeout_snd.tv_usec = 1;
    setsockopt (
       handle->socket,
       SOL_SOCKET,
       SO_SNDTIMEO,
-      &timeout,
-      sizeof (timeout));
+      &timeout_snd,
+      sizeof (timeout_snd));
+
+   /* Adjust recv timeout. This is required to be able to stop the thread
+    * with pnal_eth_get_stop */
+   timeout_rcv.tv_sec = 0;
+   timeout_rcv.tv_usec = 1000;
+   setsockopt (
+      handle->socket,
+      SOL_SOCKET,
+      SO_RCVTIMEO,
+      &timeout_rcv,
+      sizeof (timeout_rcv));
 
    /* Send outgoing messages directly to the interface, without using Linux
     * routing */
@@ -163,8 +202,32 @@ pnal_eth_handle_t * pnal_eth_init (
    }
    else
    {
+      os_mutex_destroy (handle->stop_mutex);
       free (handle);
       return NULL;
+   }
+}
+
+void pnal_eth_exit (pnal_eth_handle_t * handle)
+{
+   pnal_eth_set_stop (handle);
+   int ret = os_thread_join (handle->thread);
+   if (ret != 0)
+   {
+      LOG_ERROR (
+         PNET_LOG,
+         "BGW(%d): Could not join with eth thread (%d)\n",
+         __LINE__,
+         ret);
+   }
+   os_mutex_destroy (handle->stop_mutex);
+   if (handle->thread != NULL)
+   {
+      free (handle->thread);
+   }
+   if (handle != NULL)
+   {
+      free (handle);
    }
 }
 
