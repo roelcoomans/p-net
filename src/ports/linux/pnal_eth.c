@@ -19,14 +19,17 @@
  */
 
 #include "pnal.h"
+#include "osal_log.h"
 
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netpacket/packet.h>
 #include <sys/ioctl.h>
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 struct pnal_eth_handle
 {
@@ -134,7 +137,13 @@ pnal_eth_handle_t * pnal_eth_init (
    {
       ifr.ifr_flags |= IFF_ALLMULTI; /* Receive all multicasts */
    }
-   ioctl (handle->socket, SIOCSIFFLAGS, &ifr);
+   if (ioctl (handle->socket, SIOCSIFFLAGS, &ifr) < 0)
+   {
+      LOG_ERROR (
+         PNET_LOG,
+         "BGW(%d): Could not set IFF_ALLMULTI flag (%d)\n",
+         __LINE__, errno);
+   }
 
    /* Bind socket to relevant protocol */
    sll.sll_family = AF_PACKET;
