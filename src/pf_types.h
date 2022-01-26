@@ -79,7 +79,7 @@ static inline uint32_t atomic_fetch_sub (atomic_int * p, uint32_t v)
 #define PF_FRAG_TIMEOUT     2000
 
 /** Time between Ethernet link status checks, in microseconds */
-#define PF_LINK_MONITOR_INTERVAL 100000
+#define PF_LINK_MONITOR_INTERVAL 500000
 
 /** One neighbour shall be checked for PDPortDataCheck
  *  See Profinet 2.4 protocol, section 5.2.13.3
