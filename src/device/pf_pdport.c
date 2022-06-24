@@ -272,6 +272,12 @@ bool pf_pdport_is_a_fast_port_in_use (pnet_t * net)
          fast_enough ? "Fast enough" : "Too slow",
          eth_status.running ? "Yes" : "No");
 #endif
+      /* mau_type calculation is not always quite correct
+       * (especially not with a virtual interface).
+       * Besides, the selected port will just have to do (regardless).
+       * So, let's override (after logging above).
+       */
+      fast_enough = true;
       if (fast_enough && eth_status.running)
       {
          /* Do not return early, to list all ports in the debug output */
