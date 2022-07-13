@@ -26,6 +26,7 @@
 #include <net/if.h>
 #include <netpacket/packet.h>
 #include <sys/ioctl.h>
+#include <linux/filter.h>
 
 #include <errno.h>
 #include <stdlib.h>
@@ -102,6 +103,80 @@ static void os_eth_task (void * thread_arg)
    pnal_buf_free (p);
 }
 
+/*
+Current code base has only 1 place that calls pnal_eth_init, and the callback
+that is used there only cares about 2 ethertypes (possibly within any number
+of VLAN tags).  As such, we can apply a kernel-side filter here.
+This is essentially the system used by (e.g.) libpcap
+(see also https://www.kernel.org/doc/html/latest/networking/filter.html).
+
+In particular, the code dump is obtained by
+tcpdump -i enp0s31f6 -dd '( ether proto 0x8892 or ether proto 0x88cc ) or (
+vlan and ( ( ether proto 0x8892 or ether proto 0x88cc ) or ( vlan and ( ether
+proto 0x8892 or ether proto 0x88cc or vlan ) ) ) )'
+Note that e.g. netsniff-ng can also produce such programs
+(with a more convential bpf asm output).
+
+Note that libpcap compiler/optimizer does not always produce the right program.
+In particular, "equivalent re-arranging" of the above expression can lead to a
+different (wrong) program.  As such, check the output of -d (iso -dd) to make
+sure it does as intended.  In this case, the output is as follows, which
+indeed comes down to accepting the desired ether types with up 2 preceding
+VLAN tags (or also accept anything as of 3 nested VLAN tag, though unlikely).
+Note that ldb [-4048] uses a special extension; see also e.g.
+https://andreaskaris.github.io/blog/networking/bpf-and-tcpdump/
+
+(000) ldh      [12]
+(001) jeq      #0x8892          jt 20   jf 2
+(002) jeq      #0x88cc          jt 20   jf 3
+(003) jeq      #0x8100          jt 8    jf 4
+(004) jeq      #0x88a8          jt 8    jf 5
+(005) jeq      #0x9100          jt 8    jf 6
+(006) ldb      [-4048]
+(007) jeq      #0x1             jt 8    jf 21
+(008) ldh      [16]
+(009) jeq      #0x8892          jt 20   jf 10
+(010) jeq      #0x88cc          jt 20   jf 11
+(011) jeq      #0x8100          jt 14   jf 12
+(012) jeq      #0x88a8          jt 14   jf 13
+(013) jeq      #0x9100          jt 14   jf 21
+(014) ldh      [20]
+(015) jeq      #0x8892          jt 20   jf 16
+(016) jeq      #0x88cc          jt 20   jf 17
+(017) jeq      #0x8100          jt 20   jf 18
+(018) jeq      #0x88a8          jt 20   jf 19
+(019) jeq      #0x9100          jt 20   jf 21
+(020) ret      #262144
+(021) ret      #0
+ */
+
+// clang-format off
+struct sock_filter code[] = {
+  { 0x28, 0, 0, 0x0000000c },
+  { 0x15, 18, 0, 0x00008892 },
+  { 0x15, 17, 0, 0x000088cc },
+  { 0x15, 4, 0, 0x00008100 },
+  { 0x15, 3, 0, 0x000088a8 },
+  { 0x15, 2, 0, 0x00009100 },
+  { 0x30, 0, 0, 0xfffff030 },
+  { 0x15, 0, 13, 0x00000001 },
+  { 0x28, 0, 0, 0x00000010 },
+  { 0x15, 10, 0, 0x00008892 },
+  { 0x15, 9, 0, 0x000088cc },
+  { 0x15, 2, 0, 0x00008100 },
+  { 0x15, 1, 0, 0x000088a8 },
+  { 0x15, 0, 7, 0x00009100 },
+  { 0x28, 0, 0, 0x00000014 },
+  { 0x15, 4, 0, 0x00008892 },
+  { 0x15, 3, 0, 0x000088cc },
+  { 0x15, 2, 0, 0x00008100 },
+  { 0x15, 1, 0, 0x000088a8 },
+  { 0x15, 0, 1, 0x00009100 },
+  { 0x6, 0, 0, 0x00040000 },
+  { 0x6, 0, 0, 0x00000000 },
+};
+// clang-format on
+
 pnal_eth_handle_t * pnal_eth_init (
    const char * if_name,
    pnal_ethertype_t receive_type,
@@ -118,6 +193,7 @@ pnal_eth_handle_t * pnal_eth_init (
    struct timeval timeout_rcv;
    const uint16_t linux_receive_type =
       (receive_type == PNAL_ETHTYPE_ALL) ? ETH_P_ALL : receive_type;
+   char * envvar = NULL;
 
    handle = malloc (sizeof (pnal_eth_handle_t));
    if (handle == NULL)
@@ -135,6 +211,22 @@ pnal_eth_handle_t * pnal_eth_init (
    handle->arg = arg;
    handle->callback = callback;
    handle->socket = socket (PF_PACKET, SOCK_RAW, htons (linux_receive_type));
+
+   /* Attach filter */
+   envvar = getenv ("P_NET_USE_FILTER");
+   if (!envvar || atoi (envvar))
+   {
+      struct sock_fprog bpf = {
+         .len = sizeof (code) / sizeof (code[0]),
+         .filter = code,
+      };
+      setsockopt (
+         handle->socket,
+         SOL_SOCKET,
+         SO_ATTACH_FILTER,
+         &bpf,
+         sizeof (bpf));
+   }
 
    /* Adjust send timeout */
    timeout_snd.tv_sec = 0;
