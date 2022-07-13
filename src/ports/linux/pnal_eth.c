@@ -240,8 +240,10 @@ pnal_eth_handle_t * pnal_eth_init (
 
    /* Adjust recv timeout. This is required to be able to stop the thread
     * with pnal_eth_get_stop */
+   /* Do avoid going in and out of the system call too often. */
+   envvar = getenv ("P_NET_RCV_TIMEOUT_MS");
    timeout_rcv.tv_sec = 0;
-   timeout_rcv.tv_usec = 1000;
+   timeout_rcv.tv_usec = (envvar ? atoi (envvar) : 50) * 1000;
    setsockopt (
       handle->socket,
       SOL_SOCKET,
