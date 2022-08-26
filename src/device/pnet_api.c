@@ -48,7 +48,7 @@ int pnet_init_only (pnet_t * net, const pnet_cfg_t * p_cfg)
    /* initialize configuration */
    if (pf_fspm_init (net, p_cfg) != 0)
    {
-      return -1;
+      return AC_INIT_CONFIG_FAIL;
    }
 
    if (pf_eth_init (net, p_cfg) != 0)
@@ -57,7 +57,7 @@ int pnet_init_only (pnet_t * net, const pnet_cfg_t * p_cfg)
          PNET_LOG,
          "API(%d): Failed to initialise network interfaces\n",
          __LINE__);
-      return -1;
+      return AC_INIT_NETWORK_FAIL;
    }
 
    pf_scheduler_init (net, p_cfg->tick_us);
@@ -77,7 +77,7 @@ int pnet_init_only (pnet_t * net, const pnet_cfg_t * p_cfg)
    if (pnal_snmp_init (net, &p_cfg->pnal_cfg) != 0)
    {
       LOG_ERROR (PNET_LOG, "API(%d): Failed to configure SNMP\n", __LINE__);
-      return -1;
+      return AC_INIT_SNMP_FAIL;
    }
 #endif
 
@@ -88,33 +88,33 @@ int pnet_init_only (pnet_t * net, const pnet_cfg_t * p_cfg)
 
    net->timestamp_handle_periodic_us = os_get_current_time_us();
 
-   return 0;
+   return AC_OK;
 }
 
-pnet_t * pnet_init (const pnet_cfg_t * p_cfg)
+int pnet_init (const pnet_cfg_t * p_cfg, pnet_t ** net)
 {
-   pnet_t * net = NULL;
-
    LOG_DEBUG (PNET_LOG, "API(%d): Application calls pnet_init()\n", __LINE__);
 
-   net = os_malloc (sizeof (*net));
-   if (net == NULL)
+   *net = os_malloc (sizeof (**net));
+   if (*net == NULL)
    {
       LOG_ERROR (
          PNET_LOG,
          "API(%d): Failed to allocate memory for pnet_t (%zu bytes)\n",
          __LINE__,
-         sizeof (*net));
-      return NULL;
+         sizeof (**net));
+      return AC_INIT_ALLOC_FAIL;
    }
 
-   if (pnet_init_only (net, p_cfg) != 0)
+   int init_result = pnet_init_only (*net, p_cfg);
+   if (init_result != 0)
    {
-      free (net);
-      return NULL;
+      free (*net);
+      *net = NULL;
+      return init_result;
    }
 
-   return net;
+   return AC_OK;
 }
 
 void pnet_exit (pnet_t * net)

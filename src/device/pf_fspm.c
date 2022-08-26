@@ -449,7 +449,7 @@ int pf_fspm_init (pnet_t * net, const pnet_cfg_t * p_cfg)
          __LINE__);
    }
 
-   return 0;
+   return AC_OK;
 }
 
 void pf_fspm_exit (pnet_t * net)

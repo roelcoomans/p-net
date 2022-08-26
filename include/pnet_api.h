@@ -1286,15 +1286,25 @@ typedef struct pnet_cfg
  * -1 for an unsuccessful call.
  */
 
+// This could be much more elaborate since the stack checks lots of different
+// cases, luckily they are all logged and we can give the summary to the user
+#define AC_OK                0
+#define AC_INIT_ALLOC_FAIL   1
+#define AC_INIT_CONFIG_FAIL  2
+#define AC_INIT_NETWORK_FAIL 3
+#define AC_INIT_SNMP_FAIL    4
+
 /**
  * Initialize the Profinet stack.
  *
  * This function must be called to initialize the Profinet stack.
  * @param p_cfg            In:    Profinet configuration. These values are used
  *                                at first startup and at factory reset.
- * @return a handle to the stack instance, or NULL if an error occurred.
+ * @param net              Out: *net will be alloced on success and NULL on fail
+ * @return is one of the AC_xxx response codes from above. AC_OK on success, any
+ * of the others on fail.
  */
-PNET_EXPORT pnet_t * pnet_init (const pnet_cfg_t * p_cfg);
+PNET_EXPORT int pnet_init (const pnet_cfg_t * p_cfg, pnet_t ** net);
 
 /**
  * Cleanup and stop the Profinet stack.
