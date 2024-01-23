@@ -4989,9 +4989,19 @@ void pf_cmrpc_init (pnet_t * net)
 /* Not used */
 void pf_cmrpc_exit (pnet_t * net)
 {
+   uint16_t ix = 0;
+
    if (net->p_cmrpc_rpc_mutex != NULL)
    {
       os_mutex_destroy (net->p_cmrpc_rpc_mutex);
+      if (net->cmrpc_rpcreq_socket != -1) {
+         pf_udp_close(net, net->cmrpc_rpcreq_socket);
+         net->cmrpc_rpcreq_socket = -1;
+      }
+      for (ix = 0; ix < NELEMENTS (net->cmrpc_session_info); ix++)
+      {
+         pf_session_release(net, &net->cmrpc_session_info[ix]);
+      }
       memset (net->cmrpc_ar, 0, sizeof (net->cmrpc_ar));
       memset (net->cmrpc_session_info, 0, sizeof (net->cmrpc_session_info));
    }
