@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 
 struct pnal_eth_handle
@@ -47,6 +48,7 @@ static void pnal_eth_set_stop (pnal_eth_handle_t * handle)
 {
    os_mutex_lock (handle->stop_mutex);
    handle->stop = 1;
+   close (handle->socket);
    os_mutex_unlock (handle->stop_mutex);
 }
 
