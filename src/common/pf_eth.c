@@ -165,7 +165,7 @@ void pf_eth_exit (pnet_t * net)
    memset (
       &net->pf_interface.main_port,
       0,
-      sizeof (net->pf_interface.main_port)); /* probably not needed... */
+      sizeof (net->pf_interface.main_port));
 }
 
 int pf_eth_send (pnet_t * net, pnal_eth_handle_t * handle, pnal_buf_t * buf)

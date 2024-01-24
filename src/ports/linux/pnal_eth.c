@@ -334,6 +334,11 @@ void pnal_eth_exit (pnal_eth_handle_t * handle)
 
 int pnal_eth_send (pnal_eth_handle_t * handle, pnal_buf_t * buf)
 {
-   int ret = send (handle->socket, buf->payload, buf->len, 0);
-   return ret;
+   // if this was scheduled before exit was called, handle and socket could be
+   // gone, it might be best to double check if the pointers are still valid.
+   if (handle && handle->socket > -1)
+   {
+      return send (handle->socket, buf->payload, buf->len, 0);
+   }
+   return -1;
 }
