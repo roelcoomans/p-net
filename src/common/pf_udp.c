@@ -30,6 +30,14 @@
 
 int pf_udp_open (pnet_t * net, pnal_ipport_t port)
 {
+   if (net && net->fspm_cfg.if_cfg.main_netif_name) {
+      // if we have a configured interface, we open the RPC udp socket on that
+      // interface only.
+      // pnal_get_ip_address() returns PNAL_IPADDR_ANY on fail, so the fallback
+      // should be ok
+      return pnal_udp_open(
+          pnal_get_ip_address(net->fspm_cfg.if_cfg.main_netif_name), port);
+   }
    return pnal_udp_open (PNAL_IPADDR_ANY, port);
 }
 
